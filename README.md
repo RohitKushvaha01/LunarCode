@@ -66,4 +66,12 @@ Here are some potential use cases for **LunarCode**:
 
 ## Getting Started
 
-Since development is ongoing, there is no official release yet.
+Since development is ongoing, there is no official release yet. for now you can run the language by compiling the project
+
+```bash
+
+git clone https://github.com/RohitKushvaha01/LunarCode
+cd LunarCode
+bash gradlew run
+
+```
