@@ -36,3 +36,10 @@ sourceSets.main {
 compileKotlin {
     dependsOn generateGrammarSource
 }
+
+tasks.register('run', JavaExec) {
+    group = 'application'
+    description = 'Runs the Kotlin application'
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'com.rk.MainKt'  // Replace with your main class fully qualified name
+}
