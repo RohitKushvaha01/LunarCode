@@ -65,15 +65,14 @@ fun main{
      }
 
 
-     //calling lazy functions requires a implicit lambda in its arguments
-     //lazy functions never return anything
+     //lazy functions never return anything calling lazy functions requires a implicit lambda in its arguments
      heavy_task{ file ->
           //do something
      }
 
 
      // Property-based function
-     val name = "MyLanguage"
+     val name = "Hello"
 
      fun string version {
          return "1.0.0"
@@ -128,7 +127,7 @@ fun main{
     //virtual threads
     thread{
 
-    }.start_virtual()
+    }.startVirtual()
 
 
      //lambda shortcuts
