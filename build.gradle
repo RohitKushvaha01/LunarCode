@@ -11,11 +11,11 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test:2.0.10'
+    //testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
     implementation 'org.antlr:antlr4:4.13.2'
     antlr 'org.antlr:antlr4:4.13.2'
     implementation 'org.antlr:antlr4-runtime:4.13.2'
-
 }
 
 test {
@@ -32,6 +32,7 @@ sourceSets.main {
     java.srcDirs = ['build/generated-src/antlr/main']
 }
 
+
 // Ensure Kotlin compiles after generating ANTLR grammar
 compileKotlin {
     dependsOn generateGrammarSource
@@ -41,5 +42,7 @@ tasks.register('run', JavaExec) {
     group = 'application'
     description = 'Runs the Kotlin application'
     classpath = sourceSets.main.runtimeClasspath
-    main = 'com.rk.MainKt'  // Replace with your main class fully qualified name
+    main = 'com.rk.MainKt'  // Replace with main class fully qualified name
+    def rootProjectPath = rootProject.projectDir.absolutePath
+    args rootProjectPath
 }
