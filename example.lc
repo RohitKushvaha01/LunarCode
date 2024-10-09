@@ -57,6 +57,7 @@ fun main{
      }
 
      //similar to kotlin coroutine
+     //lazy functions run on a separate thread
      lazy fun file heavy_task{
         val file = ...
         delay(1000)
