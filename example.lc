@@ -9,7 +9,6 @@ import from myLib com.x.y
 import stdio
 
 
-//this language is very similar to kotlin
 //when a function doesn't require any argument it can be defined without ()
 
 //static block can only be placed outside of functions
@@ -33,16 +32,16 @@ static{
 
 }
 
+//functions can have functions too
 fun main{
      //when a function doesn't return anything it will run on a saprate thread unless its defined with "default fun"
 
 
-     //a fumction that doesnt return anything and doesnt start a thread
+     //a function that doesnt return anything and doesnt start a thread
      default fun x(){
      }
 
-     //this language follow small latter instead of camelcase
-     //fun can have functions too
+    
      fun sayHi(string s){
         stdio.out("HI $s")
      }
