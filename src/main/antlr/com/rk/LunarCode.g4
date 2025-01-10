@@ -1,187 +1,60 @@
 grammar LunarCode;
 
-// Lexer Rules
-IMPORT      : 'import';
-STATIC      : 'static';
-NATIVE      : 'native';
-FUN         : 'fun';
-PURE        : 'pure';
-MATCH       : 'match';
-IS          : 'is';
-ELSE        : 'else';
-MODULE      : 'module';
-TRAIT       : 'trait';
-CLASS       : 'class';
-OVERRIDE    : 'override';
-THREAD      : 'thread';
-FREE        : 'free';
-VAL         : 'val';
-RETURN      : 'return';
-IF          : 'if';
-ELSE_IF     : 'else if';
-FOR         : 'for';
-WHILE       : 'while';
-DO          : 'do';
-BREAK       : 'break';
-CONTINUE    : 'continue';
-
-LPAREN      : '(';
-RPAREN      : ')';
-LBRACE      : '{';
-RBRACE      : '}';
-LBRACK      : '[';
-RBRACK      : ']';
-ARROW       : '->';
-COLON       : ':';
-SEMICOLON   : ';';
-COMMA       : ',';
-DOT         : '.';
-EQUALS      : '=';
-ASSIGN      : ':=';
-PLUS        : '+';
-MINUS       : '-';
-STAR        : '*';
-SLASH       : '/';
-MODULO      : '%';
-GT          : '>';
-LT          : '<';
-GTE         : '>=';
-LTE         : '<=';
-EQ          : '==';
-NEQ         : '!=';
-AND         : '&&';
-OR          : '||';
-NOT         : '!';
-
-ID          : [a-zA-Z_][a-zA-Z0-9_]*;
-INT         : [0-9]+;
-STRING      : '"' .*? '"';
-WS          : [ \t\r\n]+ -> skip;
-COMMENT     : '//' .*? '\n' -> skip;
-
-// Parser Rules
-program     : statement*;
+program: statement* EOF;
 
 statement
-    : importStatement
-    | staticBlock
+    : variableDeclaration
     | functionDeclaration
-    | nativeFunctionDeclaration
-    | traitDeclaration
-    | classDeclaration
-    | moduleDeclaration
-    | threadStatement
-    | variableDeclaration
-    | matchStatement
-    | controlStatement
     | expressionStatement
-    ;
-
-importStatement
-    : IMPORT ID (DOT ID)* SEMICOLON
-    ;
-
-staticBlock
-    : STATIC LBRACE statement* RBRACE
-    ;
-
-functionDeclaration
-    : (PURE)? FUN ID (LPAREN parameterList? RPAREN)? (COLON type)? block
-    ;
-
-nativeFunctionDeclaration
-    : NATIVE FUN ID type ID DOT ID LPAREN parameterList? RPAREN SEMICOLON
-    ;
-
-traitDeclaration
-    : TRAIT ID LBRACE functionDeclaration* RBRACE
-    ;
-
-classDeclaration
-    : CLASS ID (COLON ID)? LBRACE (OVERRIDE functionDeclaration | functionDeclaration | variableDeclaration)* RBRACE
-    ;
-
-moduleDeclaration
-    : MODULE ID LBRACE statement* RBRACE
-    ;
-
-threadStatement
-    : THREAD LBRACE statement* RBRACE
+    | block
     ;
 
 variableDeclaration
-    : VAL ID (COLON type)? (EQUALS expression)? SEMICOLON
+    : 'var' ID '=' expression ';'
     ;
 
-matchStatement
-    : MATCH expression LBRACE matchCase* (ELSE ARROW expressionStatement)? RBRACE
+functionDeclaration
+    : 'fun' ID '(' parameterList? ')' block
     ;
 
-matchCase
-    : IS type ARROW expressionStatement
-    ;
-
-controlStatement
-    : ifStatement
-    | forLoop
-    | whileLoop
-    | doWhileLoop
-    | BREAK SEMICOLON
-    | CONTINUE SEMICOLON
-    ;
-
-ifStatement
-    : IF LPAREN expression RPAREN block (ELSE_IF LPAREN expression RPAREN block)* (ELSE block)?
-    ;
-
-forLoop
-    : FOR LPAREN (variableDeclaration | expression)? SEMICOLON expression? SEMICOLON expression? RPAREN block
-    ;
-
-whileLoop
-    : WHILE LPAREN expression RPAREN block
-    ;
-
-doWhileLoop
-    : DO block WHILE LPAREN expression RPAREN SEMICOLON
+parameterList
+    : ID (',' ID)*
     ;
 
 expressionStatement
-    : expression SEMICOLON
-    ;
-
-block
-    : LBRACE statement* RBRACE
+    : expression ';'
     ;
 
 expression
     : primary
-    | expression operator=('*'|'/') expression
-    | expression operator=('+'|'-') expression
-    | expression operator=('>'|'>='|'<'|'<='|'=='|'!=') expression
-    | expression operator=('&&'|'||') expression
+    | functionCall
+    | ID
+    | NUMBER
+    | STRING
     ;
 
-primary
-    : INT
-    | STRING
-    | ID
-    | ID LPAREN argumentList? RPAREN
-    | LPAREN expression RPAREN
+functionCall
+    : ID '(' argumentList? ')'
     ;
 
 argumentList
-    : expression (COMMA expression)*
+    : expression (',' expression)* // List of expressions, separated by commas
     ;
 
-parameterList
-    : parameter (COMMA parameter)*
+block
+    : '{' statement* '}'
     ;
 
-parameter
-    : ID COLON type
+primary
+    : '(' expression ')'
+    | ID
+    | NUMBER
+    | STRING
     ;
 
-type
-    : ID
-    ;
+// Lexer Rules
+ID: [a-zA-Z_][a-zA-Z0-9_]*;
+NUMBER: [0-9]+('.'[0-9]+)?;
+STRING: '"' (~["\\] | '\\' .)* '"'; // Improved STRING rule to handle commas and escape sequences.
+WS: [ \t\r\n]+ -> skip;
+COMMENT: '//' .*? '\r'? '\n' -> skip;
