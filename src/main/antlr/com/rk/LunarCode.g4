@@ -1,198 +1,187 @@
 grammar LunarCode;
 
-options {
-    language = Java;
-}
+// Lexer Rules
+IMPORT      : 'import';
+STATIC      : 'static';
+NATIVE      : 'native';
+FUN         : 'fun';
+PURE        : 'pure';
+MATCH       : 'match';
+IS          : 'is';
+ELSE        : 'else';
+MODULE      : 'module';
+TRAIT       : 'trait';
+CLASS       : 'class';
+OVERRIDE    : 'override';
+THREAD      : 'thread';
+FREE        : 'free';
+VAL         : 'val';
+RETURN      : 'return';
+IF          : 'if';
+ELSE_IF     : 'else if';
+FOR         : 'for';
+WHILE       : 'while';
+DO          : 'do';
+BREAK       : 'break';
+CONTINUE    : 'continue';
 
-// Lexer rules
-IMPORT: 'import';
-FROM: 'from';
-STATIC: 'static';
-NATIVE: 'native';
-MATH: 'math';
-LAZY: 'lazy';
-DEFAULT: 'default';
-PURE: 'pure';
-FUN: 'fun';
-VAL: 'val';
-INLINE: 'inline';
-CACHE: 'cache';
-MODULE: 'module';
-TRAIT: 'trait';
-CLASS: 'class';
-OVERRIDE: 'override';
-MATCH: 'match';
-IS: 'is';
-ELSE: 'else';
-RETURN: 'return';
-THREAD: 'thread';
-VIRTUAL: 'virtual';
-PARALLEL: 'parallel';
-FOR: 'for';
-IN: 'in';
-TO: 'to';
-IF: 'if';
-TRY: 'try';
-FINALLY: 'finally';
-SYSTEM: 'system';
-LOAD: 'load';
-GC: 'gc';
-FREE: 'free';
-DELAY: 'delay';
+LPAREN      : '(';
+RPAREN      : ')';
+LBRACE      : '{';
+RBRACE      : '}';
+LBRACK      : '[';
+RBRACK      : ']';
+ARROW       : '->';
+COLON       : ':';
+SEMICOLON   : ';';
+COMMA       : ',';
+DOT         : '.';
+EQUALS      : '=';
+ASSIGN      : ':=';
+PLUS        : '+';
+MINUS       : '-';
+STAR        : '*';
+SLASH       : '/';
+MODULO      : '%';
+GT          : '>';
+LT          : '<';
+GTE         : '>=';
+LTE         : '<=';
+EQ          : '==';
+NEQ         : '!=';
+AND         : '&&';
+OR          : '||';
+NOT         : '!';
 
-ID: [a-zA-Z_][a-zA-Z_0-9]*;
-NUMBER: [0-9]+;
-STRING: '"' .*? '"';
-COMMENT: '//' ~[\r\n]* -> skip;
-WHITESPACE: [ \t\r\n]+ -> skip;
-ARROW: '->';
-ASSIGN: '=';
-COLON: ':';
-SEMI: ';';
-LPAREN: '(';
-RPAREN: ')';
-LBRACE: '{';
-RBRACE: '}';
-LSQUARE: '[';
-RSQUARE: ']';
-COMMA: ',';
-DOT: '.';
-PLUS: '+';
-MINUS: '-';
-MULT: '*';
-DIV: '/';
-MOD: '%';
-EQ: '==';
-NEQ: '!=';
-GT: '>';
-LT: '<';
-GE: '>=';
-LE: '<=';
-NOT: '!';
+ID          : [a-zA-Z_][a-zA-Z0-9_]*;
+INT         : [0-9]+;
+STRING      : '"' .*? '"';
+WS          : [ \t\r\n]+ -> skip;
+COMMENT     : '//' .*? '\n' -> skip;
 
-// Parser rules
-compilationUnit: statement*;
+// Parser Rules
+program     : statement*;
 
 statement
     : importStatement
+    | staticBlock
     | functionDeclaration
-    | valDeclaration
-    | moduleDeclaration
+    | nativeFunctionDeclaration
     | traitDeclaration
     | classDeclaration
-    | matchExpression
-    | threadDeclaration
-    | parallelForLoop
-    | freeFunction
+    | moduleDeclaration
+    | threadStatement
+    | variableDeclaration
+    | matchStatement
+    | controlStatement
+    | expressionStatement
     ;
 
 importStatement
-    : IMPORT (FROM ID | ID | stdioImport) (DOT ID)* ('hash' STRING)?
+    : IMPORT ID (DOT ID)* SEMICOLON
     ;
 
-stdioImport
-    : 'stdio'
+staticBlock
+    : STATIC LBRACE statement* RBRACE
     ;
+
 functionDeclaration
-    : (DEFAULT | PURE | MATH | LAZY | CACHE | INLINE)? FUN returnType ID paramList functionBody
+    : (PURE)? FUN ID (LPAREN parameterList? RPAREN)? (COLON type)? block
     ;
 
-
-returnType
-    : ID
+nativeFunctionDeclaration
+    : NATIVE FUN ID type ID DOT ID LPAREN parameterList? RPAREN SEMICOLON
     ;
 
-paramList
-    : LPAREN (param (COMMA param)*)? RPAREN
+traitDeclaration
+    : TRAIT ID LBRACE functionDeclaration* RBRACE
     ;
 
-param
-    : ID COLON ID
-    ;
-
-functionBody
-    : LBRACE statement* RBRACE
-    ;
-
-valDeclaration
-    : VAL ID ASSIGN expression
+classDeclaration
+    : CLASS ID (COLON ID)? LBRACE (OVERRIDE functionDeclaration | functionDeclaration | variableDeclaration)* RBRACE
     ;
 
 moduleDeclaration
     : MODULE ID LBRACE statement* RBRACE
     ;
 
-traitDeclaration
-    : TRAIT ID LBRACE traitMember* RBRACE
+threadStatement
+    : THREAD LBRACE statement* RBRACE
     ;
 
-traitMember
-    : functionDeclaration
+variableDeclaration
+    : VAL ID (COLON type)? (EQUALS expression)? SEMICOLON
     ;
 
-classDeclaration
-    : CLASS ID (COLON ID)? LBRACE classBody* RBRACE
-    ;
-
-classBody
-    : functionDeclaration
-    | valDeclaration
-    | overrideFunction
-    ;
-
-overrideFunction
-    : OVERRIDE FUN returnType ID paramList functionBody
-    ;
-
-
-matchExpression
-    : MATCH expression LBRACE matchCase* RBRACE
+matchStatement
+    : MATCH expression LBRACE matchCase* (ELSE ARROW expressionStatement)? RBRACE
     ;
 
 matchCase
-    : IS returnType ARROW statement
-    | ELSE ARROW statement
+    : IS type ARROW expressionStatement
     ;
 
-threadDeclaration
-    : THREAD LBRACE statement* RBRACE (DOT VIRTUAL)?
+controlStatement
+    : ifStatement
+    | forLoop
+    | whileLoop
+    | doWhileLoop
+    | BREAK SEMICOLON
+    | CONTINUE SEMICOLON
     ;
 
-parallelForLoop
-    : PARALLEL FOR ID IN expression TO expression LBRACE statement* RBRACE
+ifStatement
+    : IF LPAREN expression RPAREN block (ELSE_IF LPAREN expression RPAREN block)* (ELSE block)?
     ;
 
-freeFunction
-    : FREE LPAREN ID RPAREN
-    | FREE LPAREN cacheFunction RPAREN
+forLoop
+    : FOR LPAREN (variableDeclaration | expression)? SEMICOLON expression? SEMICOLON expression? RPAREN block
     ;
 
-cacheFunction
-    : ID
+whileLoop
+    : WHILE LPAREN expression RPAREN block
     ;
 
-// Modified expression rule with precedence levels
+doWhileLoop
+    : DO block WHILE LPAREN expression RPAREN SEMICOLON
+    ;
+
+expressionStatement
+    : expression SEMICOLON
+    ;
+
+block
+    : LBRACE statement* RBRACE
+    ;
+
 expression
-    : primaryExpression (binaryOperator primaryExpression)*
+    : primary
+    | expression operator=('*'|'/') expression
+    | expression operator=('+'|'-') expression
+    | expression operator=('>'|'>='|'<'|'<='|'=='|'!=') expression
+    | expression operator=('&&'|'||') expression
     ;
 
-primaryExpression
-    : ID
+primary
+    : INT
     | STRING
-    | NUMBER
-    | functionCall
+    | ID
+    | ID LPAREN argumentList? RPAREN
     | LPAREN expression RPAREN
     ;
 
-binaryOperator
-    : PLUS
-    | MINUS
-    | MULT
-    | DIV
-    | MOD
+argumentList
+    : expression (COMMA expression)*
     ;
 
-functionCall
-    : ID LPAREN (paramList)? RPAREN
+parameterList
+    : parameter (COMMA parameter)*
     ;
 
+parameter
+    : ID COLON type
+    ;
+
+type
+    : ID
+    ;

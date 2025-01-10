@@ -11,16 +11,11 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'org.jetbrains.kotlin:kotlin-test:2.0.10'
-    //testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
     implementation 'org.antlr:antlr4:4.13.2'
     antlr 'org.antlr:antlr4:4.13.2'
     implementation 'org.antlr:antlr4-runtime:4.13.2'
 }
 
-test {
-    useJUnitPlatform()
-}
 kotlin {
     jvmToolchain(17)
 }
