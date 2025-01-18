@@ -1,2 +1,12 @@
+x = "Hell"
+x = x + "o World"
+print(x)
 
-print("Hello, x");
+
+y = 1
+z = 19129
+
+
+y = y-z
+print(y)
+

@@ -22,4 +22,5 @@ object Logger {
         err(e)
         exitProcess(1)
     }
+
 }

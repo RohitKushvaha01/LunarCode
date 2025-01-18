@@ -1,60 +1,32 @@
 grammar LunarCode;
 
-program: statement* EOF;
+// Parser rules
+program     : statement+ ;
 
-statement
-    : variableDeclaration
-    | functionDeclaration
-    | expressionStatement
-    | block
-    ;
+statement   : assignment     # assignmentStmt
+            | printStatement # printStmt
+            ;
 
-variableDeclaration
-    : 'var' ID '=' expression ';'
-    ;
+assignment  : IDENTIFIER '=' expression ;
 
-functionDeclaration
-    : 'fun' ID '(' parameterList? ')' block
-    ;
+functionCall : IDENTIFIER '(' argumentList? ')' ;
+argumentList : expression (',' expression)* ;
 
-parameterList
-    : ID (',' ID)*
-    ;
+expression  : term (('+'|'-') term)* ;
 
-expressionStatement
-    : expression ';'
-    ;
+term        : factor (('*'|'/') factor)* ;
 
-expression
-    : primary
-    | functionCall
-    | ID
-    | NUMBER
-    | STRING
-    ;
+factor      : INT
+            | STRING
+            | IDENTIFIER
+            | '(' expression ')' ;
 
-functionCall
-    : ID '(' argumentList? ')'
-    ;
+printStatement : 'print' '(' id=IDENTIFIER ')';
 
-argumentList
-    : expression (',' expression)* // List of expressions, separated by commas
-    ;
+// Lexer rules
+IDENTIFIER  : [a-zA-Z_][a-zA-Z_0-9]* ;
+INT         : [0-9]+ ;
+STRING      : '"' ( ~["\r\n\\] | '\\' [\\tnr"] )* '"' ;
 
-block
-    : '{' statement* '}'
-    ;
-
-primary
-    : '(' expression ')'
-    | ID
-    | NUMBER
-    | STRING
-    ;
-
-// Lexer Rules
-ID: [a-zA-Z_][a-zA-Z0-9_]*;
-NUMBER: [0-9]+('.'[0-9]+)?;
-STRING: '"' (~["\\] | '\\' .)* '"'; // Improved STRING rule to handle commas and escape sequences.
-WS: [ \t\r\n]+ -> skip;
-COMMENT: '//' .*? '\r'? '\n' -> skip;
+// Skip whitespace and newlines
+WS          : [ \t\r\n]+ -> skip ;
