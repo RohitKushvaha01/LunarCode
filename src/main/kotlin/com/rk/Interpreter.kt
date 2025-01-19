@@ -1,51 +1,68 @@
 package com.rk
 
+import com.rk.LunarCodeParser.*
+import kotlin.system.exitProcess
+
 class Interpreter : LunarCodeBaseListener() {
-    private val memory: MutableMap<String, Any> = HashMap()
-    private val variableTypes: MutableMap<String, String> = HashMap() // To track the type of each variable
+    private val functions = mutableMapOf<String,Function>()
 
-    // Handle assignment of variables, enforcing type consistency
-    override fun exitAssignment(ctx: LunarCodeParser.AssignmentContext) {
+    init {
+        functions["println"] = Function(
+            name = "println",
+            params = arrayOf(),
+            unlimitedParams = true,
+            body = { args ->
+                if (args.size == 1){
+                    println(args[0])
+                }else{
+                    println(args)
+                }
+            }
+        )
+
+        functions["exit"] = Function(
+            name = "println",
+            params = arrayOf("exitCode"),
+            body = { args ->
+                val exitCode = args.getOrNull(0) ?: -1
+                if (exitCode is Int){
+                    exitProcess(exitCode)
+                }else{
+                    exitProcess(-1)
+                }
+            }
+        )
+
+        functions["printStackTrace"] = Function(
+            name = "printStackTrace",
+            params = arrayOf(),
+            body = {
+                Stack.printStackTrace()
+            }
+        )
+
+        functions["printVariableTrace"] = Function(
+            name = "printVariableTrace",
+            params = arrayOf(),
+            body = {
+                Stack.printVariableStack()
+            }
+        )
+    }
+
+
+    override fun exitAssignment(ctx: AssignmentContext) {
+        if (isAFunction){
+            return
+        }
         val variable: String = ctx.IDENTIFIER()?.text ?: throw RuntimeException("Missing identifier")
-
-        // Evaluate the expression on the right-hand side
         val value: Any = evaluateExpression(ctx.expression())
 
-        // Check if the variable already exists and if its type matches the new value's type
-        if (variable in variableTypes) {
-            val existingType = variableTypes[variable]
-            val newType = when (value) {
-                is Int -> "Int"
-                is String -> "String"
-                else -> throw RuntimeException("Unsupported value type")
-            }
-
-            if (existingType != newType) {
-                throw RuntimeException("Type mismatch: Cannot assign '$newType' to variable '$variable' (previously assigned as '$existingType')")
-            }
-        }
-
-        // Store the variable value and type in memory
-        memory[variable] = value
-        variableTypes[variable] = when (value) {
-            is Int -> "Int"
-            is String -> "String"
-            else -> throw RuntimeException("Unsupported value type")
-        }
+        Stack.defineVariable(variable,value)
     }
 
-    // Print the value of a variable
-    override fun exitPrintStmt(ctx: LunarCodeParser.PrintStmtContext) {
-        val variable: String = ctx.printStatement().id?.text ?: throw RuntimeException("Missing identifier")
-        val value = memory[variable]
-        if (value != null) {
-            println(value)
-        } else {
-            throw RuntimeException("Variable '$variable' not found")
-        }
-    }
 
-    private fun evaluateExpression(expr: LunarCodeParser.ExpressionContext): Any {
+    private fun evaluateExpression(expr: ExpressionContext): Any {
         // Handle arithmetic operations (addition, subtraction, multiplication, division)
         val left = evaluateTerm(expr.term(0))
         var result = left
@@ -71,7 +88,76 @@ class Interpreter : LunarCodeBaseListener() {
         return result
     }
 
-    private fun evaluateTerm(term: LunarCodeParser.TermContext): Any {
+    var isAFunction = false
+    override fun enterFunctionDecl(ctx: FunctionDeclContext?) {
+        if (isAFunction){
+            throw RuntimeException("Cannot define functions in this scope")
+        }
+        isAFunction = true
+        val name = ctx!!.IDENTIFIER().text!!
+        val params = ctx.parameterList()?.IDENTIFIER()
+        val body = ctx.statement()
+
+        if (functions.containsKey(name)){
+            throw RuntimeException("Function with name $name is already defined")
+        }
+
+        functions[name] = Function(
+            name = name,
+            params = params?.map { it.text }?.toTypedArray() ?: emptyArray(),
+            body = {
+                eval(body)
+            }
+        )
+
+
+
+    }
+
+    fun eval(body:List<StatementContext>){
+        body.forEach { statement ->
+            when(statement){
+                is FunctionCallStmtContext -> {
+                    exitFunctionCall(statement.functionCall())
+                }
+
+                is FunctionDeclStmtContext -> {
+                    enterFunctionDecl(statement.functionDecl())
+                }
+                is AssignmentStmtContext -> {
+                    exitAssignment(statement.assignment())
+                }
+            }
+        }
+    }
+
+    override fun exitFunctionDecl(ctx: FunctionDeclContext) {
+        //now resume execution of statements
+        isAFunction = false
+    }
+
+    override fun exitFunctionCall(ctx: FunctionCallContext?) {
+        if (isAFunction){
+            return
+        }
+        val name = ctx?.IDENTIFIER()?.text!!
+        val argList = ctx?.argumentList()
+        val args = mutableListOf<Argument>()
+        if(argList?.isEmpty?.not() == true){
+            val rawArgs = ctx.argumentList().expression()
+            if (rawArgs.isNotEmpty()){
+                for (i in 0 until rawArgs.size){
+                    val arg = evaluateExpression(rawArgs[i])
+                    args.add(arg)
+                }
+            }
+        }
+
+       val function = functions[name] ?: throw RuntimeException("Undefined function $name")
+       function.invoke(args = args.toTypedArray())
+    }
+
+    private fun evaluateTerm(term: TermContext): Any {
         // Handle multiplication and division
         val left = evaluateFactor(term.factor(0))
         var result = left
@@ -89,13 +175,12 @@ class Interpreter : LunarCodeBaseListener() {
         return result
     }
 
-    private fun evaluateFactor(factor: LunarCodeParser.FactorContext): Any {
+    private fun evaluateFactor(factor: FactorContext): Any {
         return when {
             factor.INT() != null -> factor.INT().text.toInt()
             factor.IDENTIFIER() != null -> {
                 val variable = factor.IDENTIFIER().text
-                val value = memory[variable] ?: throw RuntimeException("Variable '$variable' not found")
-                value
+                return Stack.getVariable(variable)
             }
             factor.STRING() != null -> {
                 val rawString = factor.STRING().text
@@ -108,6 +193,9 @@ class Interpreter : LunarCodeBaseListener() {
             else -> throw RuntimeException("Invalid factor")
         }
     }
+
+
+
 
     private fun processString(rawString: String): String {
         val withoutQuotes = rawString.substring(1, rawString.length - 1)

@@ -1,32 +1,38 @@
 grammar LunarCode;
 
 // Parser rules
-program     : statement+ ;
+program         : statement+ ;
 
-statement   : assignment     # assignmentStmt
-            | printStatement # printStmt
-            ;
+statement       : assignment     # assignmentStmt
+                | functionDecl   # functionDeclStmt
+                | functionCall   # functionCallStmt
+                ;
 
-assignment  : IDENTIFIER '=' expression ;
+assignment      : IDENTIFIER '=' expression ;
 
-functionCall : IDENTIFIER '(' argumentList? ')' ;
-argumentList : expression (',' expression)* ;
+functionCall    : IDENTIFIER '(' argumentList? ')' ;
 
-expression  : term (('+'|'-') term)* ;
+functionDecl    : 'fun' IDENTIFIER '(' parameterList? ')' '{' statement* '}' ;
 
-term        : factor (('*'|'/') factor)* ;
+parameterList   : IDENTIFIER (',' IDENTIFIER)* ;
 
-factor      : INT
-            | STRING
-            | IDENTIFIER
-            | '(' expression ')' ;
+argumentList    : expression (',' expression)* ;
 
-printStatement : 'print' '(' id=IDENTIFIER ')';
+expression      : term (('+'|'-') term)* ;
+
+term            : factor (('*'|'/') factor)* ;
+
+factor          : INT
+                | STRING
+                | IDENTIFIER
+                | '(' expression ')' ;
 
 // Lexer rules
-IDENTIFIER  : [a-zA-Z_][a-zA-Z_0-9]* ;
-INT         : [0-9]+ ;
-STRING      : '"' ( ~["\r\n\\] | '\\' [\\tnr"] )* '"' ;
+IDENTIFIER      : [a-zA-Z_][a-zA-Z_0-9]* ;
+INT             : [0-9]+ ;
+STRING          : '"' ( ~["\r\n\\] | '\\' [\\tnr"] )* '"' ;
 
 // Skip whitespace and newlines
-WS          : [ \t\r\n]+ -> skip ;
+WS              : [ \t\r\n]+ -> skip ;
+LINE_COMMENT    : '//' ~[\r\n]* -> skip ; // Single-line comment
+BLOCK_COMMENT   : '/*' .*? '*/' -> skip ; // Multi-line comment
